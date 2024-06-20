@@ -6,6 +6,9 @@ This is your chance to do it!
 
 ## Installation
 
+### Dependencies
+Only dependency is the python library `requests`
+
 Either clone the repo and install with `pip install .` or wait for me to publish it on pypi.
 
 ### Local install

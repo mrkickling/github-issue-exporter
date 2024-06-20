@@ -1,0 +1,11 @@
+build
+venv
+*.egg-info
+
+*.yml
+*.yaml
+*.json
+
+!tests/*.json
+!tests/*.yml
+!tests/*.yaml

@@ -1,6 +1,7 @@
 build
 venv
 *.egg-info
+*/__pycache__
 
 *.yml
 *.yaml

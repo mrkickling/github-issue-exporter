@@ -64,6 +64,11 @@ def run():
               'https://github.com/<owner>/<repo>')
     )
     parser_export.add_argument(
+        '-p', '--pull_requests',
+        help="Export PRs from the repository as well",
+        action='store_true'
+    )
+    parser_export.add_argument(
         '-o', '--outfile',
         type=str,
         help=('Name of output file, extension [yml,yaml,json] affect format. '
@@ -75,12 +80,18 @@ def run():
     args = parser.parse_args()
 
     if args.action == "export":
-        export_issues(
-            args.repo, verbose=args.verbose, outfile=args.outfile
+        run_export(
+            args.repo,
+            export_prs=args.pull_requests,
+            verbose=args.verbose,
+            outfile=args.outfile
         )
     elif args.action == "import":
         import_issues(
-            args.repo, args.issues_file, args.token, verbose=args.verbose
+            args.repo,
+            args.issues_file,
+            args.token,
+            verbose=args.verbose
         )
     else:
         raise RuntimeError(f"Unknown action {args.action}")

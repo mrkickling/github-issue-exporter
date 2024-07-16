@@ -40,6 +40,8 @@ class PullRequest:
     body: str
     labels: list = field(compare=False)
     state: str
+    head: str
+    base: str
 
     @classmethod
     def from_dict(cls, dictionary: dict) -> Issue:
@@ -48,7 +50,9 @@ class PullRequest:
             dictionary.get('title'),
             dictionary.get('body'),
             dictionary.get('labels'),
-            dictionary.get('state')
+            dictionary.get('state'),
+            dictionary.get('head'),
+            dictionary.get('base')
         )
 
     def to_dict(self) -> dict:
@@ -58,6 +62,8 @@ class PullRequest:
             'body': self.body,
             'labels': self.labels,
             'state': self.state,
+            'head': self.head,
+            'base': self.base,
         }
 
 

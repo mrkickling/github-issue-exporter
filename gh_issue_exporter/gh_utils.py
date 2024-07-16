@@ -33,6 +33,46 @@ class Issue:
         }
 
 
+@dataclass(frozen=True)
+class PullRequest:
+    """Representation of a GH PR"""
+    title: str
+    body: str
+    labels: list = field(compare=False)
+    state: str
+    head: str
+    base: str
+
+    @classmethod
+    def from_dict(cls, dictionary: dict) -> Issue:
+        """Convert dict to Issue"""
+
+        # Get the label if not already unwrapped
+        head = dictionary.get('head')
+        base = dictionary.get('base')
+        head = head.get('label') if isinstance(head, dict) else head
+        base = base.get('label') if isinstance(base, dict) else base
+
+        return cls(
+            dictionary.get('title'),
+            dictionary.get('body'),
+            dictionary.get('labels'),
+            dictionary.get('state'),
+            head, base
+        )
+
+    def to_dict(self) -> dict:
+        """Convert Issue to dict"""
+        return {
+            'title': self.title,
+            'body': self.body,
+            'labels': self.labels,
+            'state': self.state,
+            'head': self.head,
+            'base': self.base,
+        }
+
+
 def get_owner_and_repo_from_gh_url(url: str) -> tuple[str, str]:
     """Extract the owner and repo name from a github repo url"""
 
@@ -52,3 +92,8 @@ def is_gh_url(url: str) -> bool:
 def create_gh_api_issues_url(owner: str, repo: str) -> str:
     """Craft a url that can be used to fetch issues for given owner + repo"""
     return f"{GH_BASE_API_URL}/repos/{owner}/{repo}/issues"
+
+
+def create_gh_api_pulls_url(owner: str, repo: str) -> str:
+    """Craft a url that can be used to fetch PRs for given owner + repo"""
+    return f"{GH_BASE_API_URL}/repos/{owner}/{repo}/pulls"

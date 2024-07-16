@@ -9,7 +9,11 @@ This is your chance to do it!
 ### Dependencies
 Only dependency is the python library `requests`
 
-Either clone the repo and install with `pip install .` or wait for me to publish it on pypi.
+Either clone the repo and install with `pip install .` or install with pip:
+
+`pip install gh-issue-exporter`
+
+See PyPi page: https://pypi.org/project/gh-issue-exporter/
 
 ### Local install
 

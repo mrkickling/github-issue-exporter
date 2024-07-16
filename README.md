@@ -30,6 +30,11 @@ This creates a JSON file with issues called 'mal-toolbox.json' in the same direc
 
 To select outfile name, use the o-flag: `-o <outfile>`
 
+To export pull requests as well:
+
+`gh-issue-exporter export https://github.com/mal-lang/mal-toolbox/ --pull_requests [-p]`
+
+
 ### Importing issues from an issue file to a repository
 
 #### Preparation

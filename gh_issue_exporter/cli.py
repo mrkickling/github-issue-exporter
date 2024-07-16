@@ -1,7 +1,7 @@
 """GH-Issue-exporter CLI"""
 
 import argparse
-from .exporter import export_issues
+from .exporter import run_export
 from .importer import import_issues
 
 def run():

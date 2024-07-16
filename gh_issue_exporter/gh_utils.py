@@ -33,6 +33,34 @@ class Issue:
         }
 
 
+@dataclass(frozen=True)
+class PullRequest:
+    """Representation of a GH PR"""
+    title: str
+    body: str
+    labels: list = field(compare=False)
+    state: str
+
+    @classmethod
+    def from_dict(cls, dictionary: dict) -> Issue:
+        """Convert dict to Issue"""
+        return cls(
+            dictionary.get('title'),
+            dictionary.get('body'),
+            dictionary.get('labels'),
+            dictionary.get('state')
+        )
+
+    def to_dict(self) -> dict:
+        """Convert Issue to dict"""
+        return {
+            'title': self.title,
+            'body': self.body,
+            'labels': self.labels,
+            'state': self.state,
+        }
+
+
 def get_owner_and_repo_from_gh_url(url: str) -> tuple[str, str]:
     """Extract the owner and repo name from a github repo url"""
 

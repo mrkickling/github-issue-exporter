@@ -5,7 +5,7 @@ from typing import Optional
 
 import requests
 
-from .gh_utils import Issue
+from .gh_utils import Issue, PullRequest
 
 GH_BASE_URL = "https://github.com/"
 GH_BASE_API_URL = "https://api.github.com"
@@ -35,8 +35,27 @@ def create_gh_api_issues_url(owner: str, repo: str) -> str:
     return f"{GH_BASE_API_URL}/repos/{owner}/{repo}/issues"
 
 
+def create_gh_api_pulls_url(owner: str, repo: str) -> str:
+    """Craft a url that can be used to fetch PRs for given owner + repo"""
+    return f"{GH_BASE_API_URL}/repos/{owner}/{repo}/pulls"
+
+
+def next_page_gh_api(res) -> str:
+    """Pagination of api results, find next link"""
+    url = ""
+    next_link = res.headers.get('link')  # pagination
+
+    next_page_exists = (
+        next_link and next_link.find('rel=\"next\"') > -1
+    )
+    if next_page_exists:
+        url = next_link.split('>;')[0].replace('<', '')
+    return url
+
+
 def get_gh_issues(owner: str, repo: str) -> list[Issue]:
     """Get github issues from the Github API for given owner + repo"""
+
     def verify_response(res):
         if isinstance(res, dict) and json_response.get('status') == '404':
             raise LookupError(f"Could not find github repo {repo}")
@@ -45,49 +64,70 @@ def get_gh_issues(owner: str, repo: str) -> list[Issue]:
 
     issues = []
     while issues_url:
-
         # Get issues for current issues_url
         res = requests.get(issues_url, timeout=30)
         json_response = res.json()
         verify_response(json_response)
         issues += [Issue.from_dict(issue) for issue in json_response]
-
-        # Pagination, find next issues_url
-        issues_url = ""
-        next_link = res.headers.get('link')  # pagination
-
-        next_page_exists = (
-            next_link and next_link.find('rel=\"next\"') > -1
-        )
-        if next_page_exists:
-            issues_url = next_link.split('>;')[0].replace('<', '')
+        issues_url = next_page_gh_api(res)
 
     return issues
 
 
-def write_issues_to_json_file(filename: str, issues: list) -> None:
+def get_gh_pull_requests(owner: str, repo: str) -> list[PullRequest]:
+    """Get PRs from Github API for given owner + repo"""
+
+    def verify_response(res):
+        if isinstance(res, dict) and json_response.get('status') == '404':
+            raise LookupError(f"Could not find github repo {repo}")
+
+    pulls_url = create_gh_api_pulls_url(owner, repo)
+
+    pull_requests = []
+    while pulls_url:
+        # Get PRs for current pulls_url
+        res = requests.get(pulls_url, timeout=30)
+        json_response = res.json()
+        verify_response(json_response)
+        pull_requests += [PullRequest.from_dict(pr) for pr in json_response]
+        pulls_url = next_page_gh_api(res)
+
+    return pull_requests
+
+
+def write_export_to_json_file(filename: str, issues: list) -> None:
     """Write issues to json file"""
     with open(filename, 'w', encoding='utf-8') as f:
         json.dump(issues, f)
 
 
-def write_issues_to_file(filename: str, issues: list[Issue]) -> None:
+def write_issues_to_file(filename: str, export: dict) -> None:
     """Write issues to file with chosen file format"""
 
-    if not issues:
-        logger.warning("No issues found, not writing anything")
+    if not export:
+        logger.warning("Nothing to export found, not writing anything")
         return
 
-    dict_issues = [issue.to_dict() for issue in issues]
-    write_issues_to_json_file(filename, dict_issues)
-    logger.info("Issues written to file %s", filename)
+    serialized = {}
+    serialized['issues'] = []
+    serialized['prs'] = []
+
+    for issue in export.get('issues'):
+        serialized['issues'].append(issue.to_dict())
+    for pr in export.get('prs'):
+        serialized['prs'].append(pr.to_dict())
+
+    write_export_to_json_file(filename, serialized)
+    logger.info("Export written to file %s", filename)
 
 
-
-def export_issues(
-        repo_url: str, verbose=False, outfile: Optional[str]=None
+def run_export(
+        repo_url: str,
+        export_prs: bool = False,
+        verbose: bool = False,
+        outfile: Optional[str] = None
     ) -> None:
-    """Fetch issues from a repo and export them to a file"""
+    """Fetch issues and optionally PRs from a repo and export to a file"""
 
     if verbose:
         logger.setLevel(logging.DEBUG)
@@ -99,10 +139,22 @@ def export_issues(
     else:
         raise ValueError(f"{repo_url} is not a URL to a github repository")
 
+    export = {}
+
     # Fetch the issues
-    issues = get_gh_issues(owner, repo_name)
-    logger.info("Found %s issues in GH repo %s", len(issues), repo_name)
+    export['issues'] = get_gh_issues(owner, repo_name)
+    logger.info(
+        "Found %s issues in GH repo %s",
+        len(export['issues']), repo_name
+    )
+
+    if export_prs:
+        export['prs'] = get_gh_pull_requests(owner, repo_name)
+        logger.info(
+            "Found %s PRs in GH repo %s",
+            len(export['prs']), repo_name
+        )
 
     # Save the issues to a file
     outfile = outfile or (repo_name + ".json")
-    write_issues_to_file(outfile, issues)
+    write_issues_to_file(outfile, export)

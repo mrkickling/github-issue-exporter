@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 def verify_response(res: requests.Response):
+    """Raise if error"""
     if res.status_code >= 300:
         raise requests.HTTPError(res.json())
 
@@ -24,7 +25,7 @@ def verify_response(res: requests.Response):
 def import_issues_to_repo(
         owner: str, repo: str, token: str, issues: list[Issue]
     ) -> None:
-    """Get github issues from the Github API for given owner + repo"""
+    """Import github issues using GH API to given owner + repo"""
 
     headers = {
         'Authorization': f'Bearer {token}',
@@ -40,16 +41,19 @@ def import_issues_to_repo(
         logger.info("Imported issue %s", issue.title)
 
 
-def load_issues_from_json(filename: str) -> list[Issue]:
-    """Read issues from json file, convert and return"""
+def load_export_file(filename: str) -> list[Issue]:
+    """Read issues and prs from json file, convert and return"""
     with open(filename, 'r', encoding='utf-8') as f:
-        issues = [Issue.from_dict(issue) for issue in json.load(f)]
+        export_file = json.load(f)
+        issues = [
+            Issue.from_dict(issue) for issue in export_file.get('issues', [])
+        ]
         return issues
 
 
-def import_issues(
+def run_import(
         repo_url: str,
-        issues_file: str,
+        export_file: str,
         token: str,
         verbose=False,
     ) -> None:
@@ -65,18 +69,20 @@ def import_issues(
     else:
         raise ValueError(f"{repo_url} is not a URL to a github repository")
 
-    # Fetch the issues
+    # Fetch the issues and PRs from remote and from export file
     remote_issues = get_gh_issues(owner, repo_name)
-    local_issues = load_issues_from_json(issues_file)
+    local_issues = load_export_file(export_file)
     logger.info(
         "Found %s issues in GH repo %s", len(remote_issues), repo_name)
     logger.info(
-        "Found %s issues in file %s", len(local_issues), issues_file)
+        "Found %s issues in file %s", len(local_issues), export_file)
 
+    # Find issues to actually import and import them
     missing_issues = set(local_issues) - set(remote_issues)
     logger.info(
         "%s issues to import", len(missing_issues))
     import_issues_to_repo(owner, repo_name, token, missing_issues)
 
     logger.info(
-        "Importing %s missing issues", len(missing_issues))
+        "Imported %s issues", len(missing_issues)
+    )

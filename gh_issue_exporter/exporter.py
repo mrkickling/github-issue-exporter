@@ -5,7 +5,12 @@ from typing import Optional
 
 import requests
 
-from .gh_utils import Issue, PullRequest
+from .gh_utils import (
+    create_gh_api_issues_url,
+    create_gh_api_pulls_url,
+    get_owner_and_repo_from_gh_url,
+    is_gh_url, Issue, PullRequest
+)
 
 GH_BASE_URL = "https://github.com/"
 GH_BASE_API_URL = "https://api.github.com"
@@ -13,31 +18,6 @@ GH_BASE_API_URL = "https://api.github.com"
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-
-def get_owner_and_repo_from_gh_url(url: str) -> tuple[str, str]:
-    """Extract the owner and repo name from a github repo url"""
-
-    # Remove possible parameters and trailing slash
-    url_no_params = url.split("?")[0].rstrip("/")
-
-    # '<owner>/<repo>' will be at end of the URL
-    return url_no_params.split("/")[-2:]
-
-
-def is_gh_url(url: str) -> bool:
-    """Understand if given string is a github repo url"""
-    # Github repo url has at least 4 slashes, but we allow for trailing slash
-    return url.startswith(GH_BASE_URL) and 4 <= url.count("/") <= 5
-
-
-def create_gh_api_issues_url(owner: str, repo: str) -> str:
-    """Craft a url that can be used to fetch issues for given owner + repo"""
-    return f"{GH_BASE_API_URL}/repos/{owner}/{repo}/issues"
-
-
-def create_gh_api_pulls_url(owner: str, repo: str) -> str:
-    """Craft a url that can be used to fetch PRs for given owner + repo"""
-    return f"{GH_BASE_API_URL}/repos/{owner}/{repo}/pulls"
 
 
 def next_page_gh_api(res) -> str:
@@ -112,9 +92,9 @@ def write_issues_to_file(filename: str, export: dict) -> None:
     serialized['issues'] = []
     serialized['prs'] = []
 
-    for issue in export.get('issues'):
+    for issue in export.get('issues', []):
         serialized['issues'].append(issue.to_dict())
-    for pr in export.get('prs'):
+    for pr in export.get('prs', []):
         serialized['prs'].append(pr.to_dict())
 
     write_export_to_json_file(filename, serialized)

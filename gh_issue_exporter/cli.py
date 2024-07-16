@@ -2,7 +2,7 @@
 
 import argparse
 from .exporter import run_export
-from .importer import import_issues
+from .importer import run_import
 
 def run():
     """CLI for GH Issue Exporter - the easy issue exporter for Github"""
@@ -87,7 +87,7 @@ def run():
             outfile=args.outfile
         )
     elif args.action == "import":
-        import_issues(
+        run_import(
             args.repo,
             args.issues_file,
             args.token,
